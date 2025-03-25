@@ -3,6 +3,16 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 
+# Use today as the exit date
+exit_date = datetime.today().strftime('%Y-%m-%d')
+
+# Entry signals come from two weeks ago
+entry_date = (datetime.today() - timedelta(days=14)).strftime('%Y-%m-%d')
+
+# Fetch 30 days of history to compute moving averages
+historical_start = (datetime.today() - timedelta(days=30)).strftime('%Y-%m-%d')
+
+
 # === STATIC TRADE SIGNALS (all trades from 5 Mar 2025 → 20 Mar 2025) ===
 trade_signals = pd.DataFrame({
     'Symbol': ['KOTAKBANK.NS', 'TECHM.NS', 'POWERGRID.NS', 'SBILIFE.NS', 'NTPC.NS',
@@ -13,13 +23,13 @@ trade_signals = pd.DataFrame({
                   'Buy', 'Buy', 'Buy', 'Sell', 'Buy',
                   'Buy', 'Buy', 'Buy', 'Sell', 'Buy',
                   'Sell', 'Sell', 'Buy', 'Buy', 'Buy', 'Sell', 'Buy'],
-    'Crossover Date': ['2025-03-05'] * 22,
-    'Signal Effective Date': ['2025-03-20'] * 22
+    'Crossover Date': [entry_date] * 22,
+    'Signal Effective Date': [exit_date] * 22
 })
 
 def validate_date(date_str):
     date = datetime.strptime(date_str, '%Y-%m-%d')
-    simulation_end = datetime.strptime('2025-03-20', '%Y-%m-%d')
+    simulation_end = datetime.strptime(exit_date, '%Y-%m-%d')
     if date > simulation_end:
         return simulation_end.strftime('%Y-%m-%d')
     return date_str
@@ -38,8 +48,8 @@ def fetch_historical_data(symbol, date):
 
 def fetch_live_price(symbol):
     ticker = yf.Ticker(symbol.upper())
-    start = '2025-03-20'
-    end = '2025-03-21'
+    start = entry_date
+    end = exit_date
     try:
         df = ticker.history(start=start, end=end)
         return df['Close'].iloc[-1] if not df.empty else None
@@ -65,14 +75,14 @@ def calculate_pnl(signals):
             'Symbol': symbol,
             'Crossover': cross,
             'Entry Price': entry_price,
-            'Exit Price (2025-03-20)': exit_price,
+            'Exit Price': exit_price,
             'P&L': pnl,
             'P&L (%)': pnl_pct
         })
 
     return pd.DataFrame(rows)
 
-st.title("Paper Trading Simulation (5 Mar → 20 Mar 2025)")
+st.title(f"Paper Trading Simulation ({entry_date} → {exit_date}")
 with st.spinner("Calculating P&L..."):
     portfolio_df = calculate_pnl(trade_signals)
 
@@ -85,7 +95,7 @@ else:
 
     # Format copy for display
     display_df = portfolio_df.copy()
-    for col in ['Entry Price', 'Exit Price (2025-03-20)', 'P&L', 'P&L (%)']:
+    for col in ['Entry Price', 'Exit Price', 'P&L', 'P&L (%)']:
         display_df[col] = display_df[col].map("{:.2f}".format)
 
     st.subheader("Open Positions & P&L")
