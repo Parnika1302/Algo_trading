@@ -102,10 +102,14 @@ else:
     st.dataframe(display_df.set_index('Symbol'))
     st.markdown(f"**Total P&L:** {total_pnl:.2f} INR ({total_pct:.2f}%)")
 
+    # Build a filename that includes today’s date
+    filename = f"simulated_portfolio_{datetime.today().strftime('%Y-%m-%d')}.csv"
+
+
     st.download_button(
         "Download Portfolio CSV",
         portfolio_df.to_csv(index=False).encode('utf-8'),
-        "simulated_portfolio.csv",
+        filename ,
         "text/csv"
     )
 
